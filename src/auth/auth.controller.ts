@@ -93,7 +93,7 @@ export class AuthController {
   async user(@Req() request: Request) {
     const cookie = request.cookies['jwt'];
     const { id } = await this.jwtService.verifyAsync(cookie);
-    console.log(id);
+
     if (request.path === '/api/admin/user') {
       return await this.userService.findOne({ id });
     }

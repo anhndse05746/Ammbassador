@@ -1,6 +1,6 @@
-import { Module } from '@nestjs/common';
-import { JwtModule, JwtService } from '@nestjs/jwt';
-import { AuthGuard } from '../auth/auth.guard';
+import { CacheModule, Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
+import * as redisStore from 'cache-manager-redis-store';
 
 @Module({
   imports: [
@@ -8,7 +8,12 @@ import { AuthGuard } from '../auth/auth.guard';
       secret: 'secret',
       signOptions: { expiresIn: '1d' },
     }),
+    CacheModule.register({
+      store: redisStore,
+      host: 'redis',
+      port: 6379,
+    }),
   ],
-  exports: [JwtModule],
+  exports: [JwtModule, CacheModule],
 })
 export class SharedModule {}

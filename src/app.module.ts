@@ -8,9 +8,11 @@ import { OrderModule } from './order/order.module';
 import { ControllerService } from './controller/controller.service';
 import { LinkModule } from './link/link.module';
 import { SharedModule } from './shared/shared.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
+    EventEmitterModule.forRoot(),
     TypeOrmModule.forRoot({
       type: 'mysql',
       host: 'db',
