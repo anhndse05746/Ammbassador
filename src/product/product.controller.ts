@@ -11,6 +11,7 @@ import {
   Param,
   Post,
   Put,
+  Req,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -19,6 +20,8 @@ import { ProductCreateDto } from './dtos/product-create.dto';
 import { ProductService } from './product.service';
 import { Cache } from 'cache-manager';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Request } from 'express';
+import { Product } from './product';
 
 @Controller('')
 export class ProductController {
@@ -82,11 +85,56 @@ export class ProductController {
     return products;
   }
 
-  @CacheKey('products_backend')
-  @CacheTTL(1800)
-  @UseInterceptors(CacheInterceptor)
   @Get('ambassador/products/backend')
-  async backend() {
-    return await this.productService.find({});
+  async backend(@Req() request: Request) {
+    let products = await this.cacheManager.get<Product[]>('products_frontend');
+
+    if (!products) {
+      products = await this.productService.find({});
+      await this.cacheManager.set('products_frontend', products, { ttl: 1800 });
+    }
+
+    //Searching
+    if (request.query.search) {
+      let s = request.query.search as string;
+      products = products.filter(
+        (item) =>
+          item.title.toLocaleLowerCase().indexOf(s.toLocaleLowerCase()) >= 0 ||
+          item.title.toLocaleLowerCase().indexOf(s.toLocaleLowerCase()) >= 0,
+      );
+    }
+
+    //Sorting
+    if (request.query.sort === 'desc' || request.query.sort === 'asc') {
+      products.sort((a, b) => {
+        //difference between 2 product price
+        let diff = a.price - b.price;
+
+        if (diff === 0) return 0;
+
+        //return 1 || -1
+        let sign = Math.abs(diff) / diff;
+
+        return request.query.sort === 'asc' ? sign : -sign;
+      });
+    }
+
+    //Paginate
+    const perPage = 5;
+    const curentPage = parseInt(request.query.curPage as any) || 1;
+    let pageCount = Math.ceil(products.length / perPage);
+    const totalProduct = products.length;
+
+    const fromItem = (curentPage - 1) * perPage;
+    const toItem = curentPage * perPage;
+
+    const data = products.slice(fromItem, toItem);
+
+    return {
+      data,
+      totalProduct,
+      curentPage,
+      pageCount,
+    };
   }
 }

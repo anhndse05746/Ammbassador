@@ -18,7 +18,7 @@ export class Link {
   id: number;
 
   @Column()
-  code: number;
+  code: string;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'user_id' })
